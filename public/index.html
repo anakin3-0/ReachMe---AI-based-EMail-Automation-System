@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="index.css">
+    <title>Email Service Selection</title>
+</head>
+<body>
+    <div class="container">
+        <h1>ReachMe: One Stop Mailing Solution</h1>
+        <div class="button-container">
+            <button id="gmailBtn" class="service-btn gmail">Start Gmail Process</button>
+            <button id="outlookBtn" class="service-btn outlook">Start Outlook Process</button>
+        </div>
+        <button id="showProcess" class="show-process">Show Process</button>
+        <button id="autoCheckBtn" class="auto-check">Enable Automatic Check</button>
+        <div id="logBox" class="output-box" style="display: none;">
+            <pre></pre>
+        </div>
+        <div class="actions">
+            <button id="clearLogs" class="clear-logs">Clear Logs</button>
+            <button id="saveLogs" class="save-logs">Save Logs</button>
+        </div>
+    </div>
+
+    <script>
+        const logBox = document.querySelector('#logBox pre');
+        const ws = new WebSocket('ws://localhost:3000');
+        let autoCheckInterval = null;
+
+        ws.onmessage = function(event) {
+            logBox.innerText += event.data + '\n';
+            logBox.parentElement.style.display = 'block';
+        };
+
+        document.getElementById('gmailBtn').addEventListener('click', function() {
+            fetch('/start-gmail')
+                .then(response => response.json())
+                .then(data => {
+                    logBox.innerText += data.message + '\n';
+                    logBox.parentElement.style.display = 'block';
+                })
+                .catch(error => console.error('Error starting Gmail process:', error));
+        });
+
+        // document.getElementById('outlookBtn').addEventListener('click', function() {
+        //     fetch('/start-outlook')
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             logBox.innerText += data.message + '\n';
+        //             logBox.parentElement.style.display = 'block';
+        //         })
+        //         .catch(error => console.error('Error starting Outlook process:', error));
+        // });
+
+        document.getElementById('outlookBtn').addEventListener('click', function() {
+    // Open the /start-outlook route in a new tab to initiate the OAuth2 flow
+    window.open('/start-outlook', '_blank');
+});
+
+
+        document.getElementById('clearLogs').addEventListener('click', function() {
+            logBox.innerText = '';
+        });
+
+        document.getElementById('showProcess').addEventListener('click', function() {
+            const logBox = document.getElementById('logBox');
+            logBox.style.display = logBox.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.getElementById('saveLogs').addEventListener('click', function() {
+            window.location.href = '/save-logs';
+        });
+
+        // Auto Check Functionality
+        document.getElementById('autoCheckBtn').addEventListener('click', function() {
+            const autoCheckBtn = document.getElementById('autoCheckBtn');
+            if (autoCheckInterval) {
+                clearInterval(autoCheckInterval);
+                autoCheckInterval = null;
+                autoCheckBtn.textContent = 'Enable Automatic Check';
+                logBox.innerText += 'Automatic check disabled.\n';
+            } else {
+                autoCheckBtn.textContent = 'Disable Automatic Check';
+                logBox.innerText += 'Automatic check enabled. Checking every 15 minutes.\n';
+                autoCheckInterval = setInterval(() => {
+                    checkForNewMails();
+                }, 15 * 60 * 1000); // 15 minutes interval
+            }
+        });
+
+        function checkForNewMails() {
+            fetch('/start-gmail')  // Assuming Gmail check for simplicity; you can switch between services or add both
+                .then(response => response.json())
+                .then(data => {
+                    logBox.innerText += data.message + '\n';
+                    logBox.parentElement.style.display = 'block';
+                })
+                .catch(error => console.error('Error during automatic check:', error));
+        }
+    </script>
+</body>
+</html>
